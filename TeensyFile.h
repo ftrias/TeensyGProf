@@ -27,6 +27,7 @@ int TeensyProf_open(const char *fn, int flags, int perm);
 int TeensyProf_write(int fp, const void *data, int length);
 int TeensyProf_close(int fp);
 void TeensyProf_init_sd(int mosi, int sck, int cd);
+void TeensyProf_init_stream(void *s); // pass (Stream *)
 
 #ifdef __cplusplus
 }

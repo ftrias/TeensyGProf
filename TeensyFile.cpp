@@ -80,17 +80,22 @@ extern "C" int TeensyProf_close(int fp) {
 
 #elif TEENSYPROF_OUT==2 //"SERIALFILE"
 
+Stream *mystream = &Serial;
+
+extern "C" void TeensyProf_init_stream(void *s) {
+  mystream = (Stream *) s;
+}
+
 extern "C" int TeensyProf_open(const char *fn, int flags, int perm) {
   char x[256];
   x[0] = 0;
   strcat(x, "wb");
   strcat(x, ":");
   strcat(x, fn);
-  Serial.write(0x01);
-  Serial.write(0x01);
-  Serial.write(strlen(x));
-  Serial.write(x, strlen(x));
-  // Serial.read(); // get status
+  mystream->write((uint8_t)0x01);
+  mystream->write((uint8_t)0x01);
+  mystream->write((uint8_t)strlen(x));
+  mystream->write(x, strlen(x));
   return 1;
 }
 
@@ -100,25 +105,22 @@ extern "C" int TeensyProf_write(int fp, const void *data, int length) {
   while (1) {
     if (length > 64) len = 64;
     else len = length;
-    Serial.write(0x01);
-    Serial.write(0x04);
-    Serial.write((uint8_t)len);
-    Serial.write((uint8_t *)d, len);
+    mystream->write((uint8_t)0x01);
+    mystream->write((uint8_t)0x04);
+    mystream->write((uint8_t)len);
+    mystream->write((uint8_t *)d, len);
     d += len;
     length -= len;
     if (length <=0) break;
-    // delay(1);
-    // Serial.read(); // get status
   }
   return length;
 }
 
 extern "C" int TeensyProf_close(int fp) {
-  Serial.write(0x01);
-  Serial.write(0x02);
-  Serial.write(0x01);
-  Serial.write(0x00);
-  // Serial.read(); // get status
+  mystream->write((uint8_t)0x01);
+  mystream->write((uint8_t)0x02);
+  mystream->write((uint8_t)0x01);
+  mystream->write((uint8_t)0x00);
   return 1;
 }
 
@@ -165,11 +167,17 @@ extern "C" int TeensyProf_close(int fp) {
   return 1;
 }
 
-#else // TEENSYPROF_OUT==4 //"HEXFILE"
+#elif TEENSYPROF_OUT==4 //"HEXFILE"
+
+Stream *mystream = &Serial;
+
+extern "C" void TeensyProf_init_stream(void *s) {
+  mystream = (Stream *) s;
+}
 
 extern "C" int TeensyProf_open(const char *fn, int flags, int perm) {
-  Serial.print("START:");
-  Serial.println(fn);
+  mystream->print("START:");
+  mystream->println(fn);
   return 1;
 }
 
@@ -178,19 +186,19 @@ extern "C" int TeensyProf_write(int fp, const void *data, int length) {
   static int column = 0;
   for (int i=0; i<length; i++) {
     if (++column > 80) {
-      Serial.println();
+      mystream->println();
       column = 1;
     }
-    Serial.print(hex[((uint8_t *)data)[i] >> 4]);
-    Serial.print(hex[((uint8_t *)data)[i] & 0x0F]);
+    mystream->print(hex[((uint8_t *)data)[i] >> 4]);
+    mystream->print(hex[((uint8_t *)data)[i] & 0x0F]);
     // delay(1);
   }
   return length;
 }
 
 extern "C" int TeensyProf_close(int fp) {
-  Serial.println();
-  Serial.println("END");
+  mystream->println();
+  mystream->println("END");
   return 1;
 }
 
