@@ -8,6 +8,7 @@ similar procedure for Windows.
 
 See license.txt for licenses used by code.
 
+
 Requires 
 --------------
 
@@ -20,6 +21,9 @@ Normally this is part of
 a build, but Teensyduino does not include it.
 
 3. Modify `readfile.py` so the variable `gprof` has correct path to executable from step 2.
+
+4. Python installed.
+
 
 Overview
 -------------
@@ -40,6 +44,7 @@ on the serial port and then this file is cross-referenced by gprof with
 the original executable to 
 generate a table of execution times.
 
+
 Quick Instructions
 --------------
 
@@ -55,8 +60,9 @@ Quick Instructions
 and process the special `gmon.out` data. It will write out the `gmon.out` file and then
 run `gprof` showing the outout.
 
-The library also supports writing the `gmon.out` file to an SD card. See
+The library also supports writing the `gmon.out` file in hex or to an SD card. See
 `TEENSYPROF_OUT` in `TeensyGProf.h` and implementation in `TeensyFile.cpp`.
+
 
 Short Example
 ----------------
@@ -69,31 +75,33 @@ void setup() {
 void loop() {
   static long start = millis();
   do_something();
-  if (start && millis() - start > 10000) {   // write out profile data
-    gprof_end();
+  if (start && millis() - start > 10000) {   // after 10 seconds
+    gprof_end();                             // write out profile data
     start = 0;
   }
 }
 ```
 
+
 Todo
 --------------
 
 * Clean up source code. Code was ported from a destop implementation and could use
-some optimization for ARM.
+some comments and optimization for ARM.
 
-* Create a script that will make all necessary modifications to files.
+* Create a script that will make all necessary modifications to Teensyduino files.
 
 * Right now, it only profiles C++ code. If I add profiling to C files, it won't work. I've tried adding
 `__attribute__((no_instrument_section))` to many of the basic C functions like ResetHandler(), etc.
 but I can't find the right combination of functions to change. With more time, I'm sure this could
-be solved. However, since C++ is the default language INO files and almost all libraries are
+be solved. However, since C++ is the default language for Arduino files and almost all libraries are
 written in C++, this may not be a big problem.
+
 
 References
 ---------------
 
-For another ARM solution see: 
+For ARM solution this project is based on see: 
 https://mcuoneclipse.com/2015/08/23/tutorial-using-gnu-profiling-gprof-with-arm-cortex-m/
 
 For an interesting overview of gprof:
