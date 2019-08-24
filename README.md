@@ -1,13 +1,10 @@
 TeensyProf
 =====================
 
-Limited implementation of gprof profiler for Teensy 4 platform from PJRC.
+Implementation of gprof profiler for Teensy 3/4 platform from PJRC.
 
-Only the histogram is implemented. Call heirarchies are not available because
-the compiler included by Teensyduino does not support profiling
-instrumentation.
-
-This implementation guide is for Linux/Mac. A Windows version is possible.
+This document is written for Linux/Mac. It's probably possible to follow a
+similar procedure for Windows.
 
 See license.txt for licenses used by code.
 
@@ -88,7 +85,7 @@ some optimization for ARM.
 * Create a script that will make all necessary modifications to files.
 
 * Right now, it only profiles C++ code. If I add profiling to C files, it won't work. I've tried adding
-__attribute__((no_instrument_section)) to many of the basic C functions like ResetHandler(), etc.
+`__attribute__((no_instrument_section))` to many of the basic C functions like ResetHandler(), etc.
 but I can't find the right combination of functions to change. With more time, I'm sure this could
 be solved. However, since C++ is the default language INO files and almost all libraries are
 written in C++, this may not be a big problem.
@@ -113,7 +110,7 @@ The modifications to boards.txt add a new menu option Tools/Optimize/Profile. Th
 profiling to most of the code and turn off optimizations that might confuse the profiler.
 
 The source code changes are to the linker file. On Teensy 4, all the code is moved to a section
-called ".text" (the standard name that gprof expects) instead of ".text.itcm". Teensy 3 does this correctly.
+called `.text` (the standard name that gprof expects) instead of `.text.itcm`. Teensy 3 does this correctly.
 
 ```diff
 *** avr/boards.txt	2019-08-24 07:58:47.000000000 -0400
