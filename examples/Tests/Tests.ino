@@ -22,28 +22,28 @@
 #include "TeensyGProf.h"
 
 int stall_3() {
-  volatile int x;
+  volatile int x = 0;
   for(int i=0; i<300; i++) {
     for(int j=0; j<10000; j++) {
-      x = 0;
+      x++;
     }
   }
   return x;
 }
 int stall_2() {
-  volatile int x;
+  volatile int x = 0;
   for(int i=0; i<200; i++) {
     for(int j=0; j<10000; j++) {
-      x = 0;
+      x++;
     }
   }
   return x;
 }
 int stall_1() {
-  volatile int x;
+  volatile int x = 0;
   for(int i=0; i<100; i++) {
     for(int j=0; j<10000; j++) {
-      x = 0;
+      x++;
     }
   }
   return x;
