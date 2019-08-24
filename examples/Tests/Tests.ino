@@ -21,51 +21,54 @@
 
 #include "TeensyGProf.h"
 
+int stall_x() {
+    volatile int x = 0;
+    for(int j=0; j<10000; j++) {
+        x++;
+    }
+}
+
 int stall_3() {
-  volatile int x = 0;
-  for(int i=0; i<300; i++) {
-    for(int j=0; j<10000; j++) {
-      x++;
+    volatile int x = 0;
+    for (int i = 0; i < 300; i++) {
+        x += stall_x();
     }
-  }
-  return x;
+    return x;
 }
+
 int stall_2() {
-  volatile int x = 0;
-  for(int i=0; i<200; i++) {
-    for(int j=0; j<10000; j++) {
-      x++;
+    volatile int x = 0;
+    for (int i = 0; i < 200; i++) {
+        x += stall_x();
     }
-  }
-  return x;
+    return x;
 }
+
 int stall_1() {
-  volatile int x = 0;
-  for(int i=0; i<100; i++) {
-    for(int j=0; j<10000; j++) {
-      x++;
+    volatile int x = 0;
+    for (int i = 0; i < 100; i++) {
+        x += stall_x();
     }
-  }
-  return x;
+    return x;
 }
 
 void runtests() {
-  stall_1();
-  stall_2();
-  stall_3();
+    stall_1();
+    stall_2();
+    stall_3();
 }
 
 void setup() {
-  Serial.begin(115200);
+    Serial.begin(115200);
 }
 
 long start = millis();
 
 void loop() {
-  if (start) Serial.println("loop");
-  runtests();
-  if (start && millis() - start > 10000) {
-    gprof_end();
-    start = 0;
-  }
+    if (start) Serial.println("loop");
+    runtests();
+    if (start && millis() - start > 10000) {
+        gprof_end();
+        start = 0;
+    }
 }
