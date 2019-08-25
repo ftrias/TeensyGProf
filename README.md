@@ -12,17 +12,19 @@ See license.txt for licenses used by code.
 Requires 
 --------------
 
-1. Modify Teensyduino files as shown in *Patches* section at bottom of this document.
+1. Install the ZIP file as an Arduino library (Sketch/Include Library/Add ZIP Library).
 
-2. Build of gprof for ARM or use provided binaries in "binaries" directory. 
+2. Modify Teensyduino files as shown in *Patches* section at bottom of this document.
+
+3. Build of gprof for ARM or use provided binaries in "binaries" directory. 
 Instructions for building are beyond the scope of this
 text. Look up how to install your own cross-compiler, including arm-none-eabi-gprof. 
 Normally this is part of
 a build, but Teensyduino does not include it.
 
-3. Modify `readfile.py` so the variable `gprof` has correct path to executable from step 2.
+4. Modify `readfile.py` so the variable `gprof` has correct path to executable from step 2.
 
-4. Python installed.
+5. Python installed.
 
 
 Overview
