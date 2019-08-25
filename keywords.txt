@@ -1,1 +1,1 @@
-gprof	KEYWORD1
+profile	KEYWORD1

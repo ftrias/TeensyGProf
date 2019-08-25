@@ -68,7 +68,11 @@ void loop() {
     if (start) Serial.println("loop");
     runtests();
     if (start && millis() - start > 10000) {
-        gprof_end();
+        if (gprof_end() != 0) { // failed
+            Serial.println("Gprof failed");
+            Serial.print("Requested memory: ");
+            Serial.println(gprof_memory());
+        }
         start = 0;
     }
 }
