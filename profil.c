@@ -27,7 +27,7 @@ static struct profinfo prof = {
 
 extern void (* _VectorsRam[])(void);
 void systick_isr(void);
-void (* save_isr)(void);
+void (* save_isr)(void) = systick_isr;
 
 // long tickcounter = 0;
 
