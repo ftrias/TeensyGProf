@@ -60,7 +60,7 @@ Quick Instructions
 and process the special `gmon.out` data. It will write out the `gmon.out` file and then
 run `gprof` showing the outout.
 
-The library also supports writing the `gmon.out` file in hex or to an SD card. See
+The library also supports writing the `gmon.out` file from midi, in hex or to an SD card. See
 `TEENSYPROF_OUT` in `TeensyGProf.h` and implementation in `TeensyFile.cpp`.
 
 
@@ -113,6 +113,8 @@ Patches
 
 The files below must be patched. They are located in the Teensyduino install directory, which is
 a part of Arduino. On the Mac, they are in `/Applications/Arduino.app/Contents/Java/hardware/teensy`.
+
+The patches should not affect any other functionality. Arduino should work the same as before.
 
 The modifications to boards.txt add a new menu option Tools/Optimize/Profile. This option will add
 profiling to most of the code and turn off optimizations that might confuse the profiler.
