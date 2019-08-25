@@ -38,8 +38,11 @@ import glob
 import time
 
 def call_gprof():
-  os.system(gprof+" "+elfpath)
+    os.system(gprof+" "+elfpath)
 
+#
+# Hex ascii encoding
+#
 def process_hex(filename, outfile="gmon.out"):
     with open(filename) as inf:
         with open(outfile, "wb") as outf:
@@ -47,66 +50,129 @@ def process_hex(filename, outfile="gmon.out"):
                 outf.write(binascii.a2b_hex(line.strip()))
     call_gprof()
 
+#
+# Serial binary encoding
+#
 def process_msg(fxn, n, s):
-  # print("process",fxn,n,s)
-  global fp
-  global ser
-  if fxn == 1:  # open
-    (fmode, fname) = s.decode('ascii').split(":", 2)
-    fp = open(fname, fmode)
-    print("open %s" % fname)
-  elif fxn == 2:  # close
-    fp.close()
-    print("close")
-    call_gprof()
-  elif fxn == 4:  # write
-    # print("write",n)
-    fp.write(s)
+    # print("process",fxn,n,s)
+    global fp
+    global ser
+    if fxn == 1:  # open
+        (fmode, fname) = s.decode('ascii').split(":", 2)
+        fp = open(fname, fmode)
+        print("open %s" % fname)
+    elif fxn == 2:  # close
+        fp.close()
+        print("close")
+        call_gprof()
+    elif fxn == 4:  # write
+        # print("write",n)
+        fp.write(s)
 
 
 def filehost():
-  global ser
-  fxn = os.read(ser, 1)  # function
-  # print("@",fxn,"%")
-  fxn = ord(fxn)
-  n = os.read(ser, 1)  # length
-  n = ord(n)
-  if n == 0: return
-  s = os.read(ser, n)  # data
-  # print("cmd",fxn,n,s)
-  process_msg(fxn, n, s)
+    global ser
+    fxn = os.read(ser, 1)  # function
+    # print("@",fxn,"%")
+    fxn = ord(fxn)
+    n = os.read(ser, 1)  # length
+    n = ord(n)
+    if n == 0: return
+    s = os.read(ser, n)  # data
+    # print("cmd",fxn,n,s)
+    process_msg(fxn, n, s)
 
 
 def process_serial(file):
-  global ser
-  while True:
-    if not os.path.exists(file):
-      print("waiting for path:", file)
-      while not os.path.exists(file):
-        time.sleep(1)
-      print("open serial %s" % file)
-    ser = os.open(file, os.O_RDWR)
+    global ser
     while True:
-      try:
-        c = os.read(ser, 1)
-      except OSError:
-        break
-      if len(c) > 0:
-        if ord(c) == 1:  # control
-          filehost()
-        else:
-          sys.stdout.write(c.decode('ascii'))
-    print("close serial %s" % file)
+        if not os.path.exists(file):
+            print("waiting for path:", file)
+            while not os.path.exists(file):
+                time.sleep(1)
+        print("open serial %s" % file)
+        ser = os.open(file, os.O_RDWR)
+        while True:
+            try:
+                c = os.read(ser, 1)
+            except OSError:
+                break
+            if len(c) > 0:
+                if ord(c) == 1:  # control
+                    filehost()
+                else:
+                    sys.stdout.write(c.decode('ascii'))
+        print("close serial %s" % file)
+
+#
+# MIDI binary encoding
+#
+def print_midi_devices(name):
+    for n in range(pygame.midi.get_count()):
+        interface, id, inp, outp, x = pygame.midi.get_device_info(n)
+        if inp:
+            if str(id).find(name) != -1:
+                print("Device found:",id,name)
+                return n
+    print("Device not found")
+    return -1
+
+def process_midi_message(message):
+    global of
+    code = message.pop(0)
+    if code == 1:
+        filename = ''.join(map(chr, message))
+        of = open(filename, "wb")
+        print("open:", filename)
+    elif code == 2:
+        of.close()
+        print("close")
+    elif code == 3:
+        result = []
+        for b0, b1 in zip(*[iter(message)]*2):
+            b = (b0 << 4) + b1
+            result.append(b)
+        bytes = array.array('B', result).tostring()
+        of.write(bytes)
+        print("w", end='', flush=True)
+    else:
+        print("invalid:", message)
+
+def read_midi_input(input_device):
+    message = []
+    while True:
+        if input_device.poll():
+            event = input_device.read(1)[0][0]
+            #print("D:",event)
+            for code in event:
+                if code == 0xF7: # end of message!
+                    process_midi_message(message)
+                elif code == 0xF0: # end of message!
+                    message = []
+                else:
+                    message.append(code)
+
+def process_midi(name):
+    pygame.midi.init()
+    d = print_midi_devices(name)
+    if (d >= 0):
+        my_input = pygame.midi.Input(d)
+        read_midi_input(my_input)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Parse gmon.out file from Teensy.')
     parser.add_argument('--hex', help='Convert from ascii hex')
     parser.add_argument('--serial', help='Read serial device codes')
+    parser.add_argument('--midi', help='Read usb midi device with this name')
 
     args = parser.parse_args()
     if args.hex is not None:
         process_hex(args.hex)
     elif args.serial is not None:
         process_serial(args.serial)
+    elif args.midi is not None:
+        import pygame.midi
+        process_midi(args.midi)
     else:
         print("Nothing to do")
