@@ -5,7 +5,8 @@
 extern "C" {
 #endif
 
-void gprof_end();
+int gprof_end();
+int gprof_memory();
 int gprof_start();
 
 #ifdef __cplusplus

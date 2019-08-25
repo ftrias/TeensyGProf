@@ -170,9 +170,10 @@ extern struct gmonparam _gmonparam;
  * Possible states of profiling.
  */
 #define	GMON_PROF_ON	  0
-#define	GMON_PROF_BUSY	1
-#define	GMON_PROF_ERROR	2
+#define	GMON_PROF_BUSY	  1
+#define	GMON_PROF_ERROR	  2
 #define	GMON_PROF_OFF	  3
+#define	GMON_PROF_ABORT	  4
 
 // #define GMON_DISABLE
 

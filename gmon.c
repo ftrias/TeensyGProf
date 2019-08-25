@@ -54,6 +54,8 @@ static int	s_scale;
 /* see profil(2) where this is described (incorrectly) */
 #define		SCALE_1_TO_1	0x10000L
 
+int gprof_memory_requested;
+
 static void moncontrol(int mode);
 
 #if 0
@@ -76,6 +78,7 @@ void *_sbrk(int incr) {
 
 __attribute__((no_instrument_function))
 static void *fake_sbrk(int size) {
+  gprof_memory_requested = size;
   void *rv = malloc(size);
   if (rv) {
     return rv;
@@ -109,7 +112,7 @@ void monstartup (const size_t lowpc, const size_t highpc) {
 
 	cp = fake_sbrk(p->kcountsize + p->fromssize + p->tossize);
 	if (cp == (char *)MINUS_ONE_P) {
-    p->state = GMON_PROF_ERROR;
+    p->state = GMON_PROF_ABORT;
 		ERR("monstartup: out of memory\n");
 		return;
 	}
@@ -167,9 +170,14 @@ void _mcleanup(void) {
 	char dbuf[200];
 #endif
 
+	if (p->state == GMON_PROF_ABORT) {
+    return;
+  }
+
 	if (p->state == GMON_PROF_ERROR) {
 		ERR("_mcleanup: tos overflow or error\n");
 	}
+
 	hz = PROF_HZ;
 	moncontrol(0); /* stop */
 	proffile = gmon_out;
@@ -255,8 +263,16 @@ int gprof_start() {
 }
 
 
-void gprof_end() {
+int gprof_end() {
+	if (_gmonparam.state == GMON_PROF_ABORT) {
+    return 1;
+  }
   _mcleanup();
+  return 0;
+}
+
+int gprof_memory() {
+  return gprof_memory_requested;
 }
 
 // long tickcounter = 0;
@@ -270,9 +286,10 @@ void _mcount_internal(size_t *frompcindex, size_t *selfpc) {
 
   // tickcounter++;
 
-  if (already_setup != 1) {
-    // goto out;
-    gprof_start();
+  if (already_setup == 0) {
+    if (! gprof_start()) {
+      already_setup = -1;
+    }
   }
 
   #ifdef GMON_DISABLE
