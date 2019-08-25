@@ -109,6 +109,7 @@ void monstartup (const size_t lowpc, const size_t highpc) {
 
 	cp = fake_sbrk(p->kcountsize + p->fromssize + p->tossize);
 	if (cp == (char *)MINUS_ONE_P) {
+    p->state = GMON_PROF_ERROR;
 		ERR("monstartup: out of memory\n");
 		return;
 	}
@@ -242,8 +243,6 @@ static void moncontrol(int mode) {
 int gprof_start() {
   if (already_setup == 1) return 1;
   already_setup = 1;
-  // bzero(&_gmonparam, sizeof(_gmonparam));
-  // _gmonparam.state = GMON_PROF_OFF;
 #ifdef __IMXRT1062__
   extern char _stext; /* start of text/code symbol, defined by linker */
   extern char _etext; /* end of text/code symbol, defined by linker */
