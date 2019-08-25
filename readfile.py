@@ -89,7 +89,7 @@ def process_serial(file):
         if not os.path.exists(file):
             print("waiting for path:", file)
             while not os.path.exists(file):
-                time.sleep(1)
+                time.sleep(0.1)
         print("open serial %s" % file)
         ser = os.open(file, os.O_RDWR)
         while True:
