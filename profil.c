@@ -27,6 +27,7 @@ static struct profinfo prof = {
 
 extern void (* _VectorsRam[])(void);
 void systick_isr(void);
+void (* save_isr)(void);
 
 // long tickcounter = 0;
 
@@ -37,7 +38,7 @@ __attribute__((no_instrument_function))
 void gprof_systick_isr(void) {
   static size_t pc, idx;
 
-  systick_isr(); /* call normal Kinetis SDK SysTick handler */
+  save_isr(); /* call saved SysTick handler */
   if (prof.state==PROFILE_ON) {
     pc = ((uint32_t*)(__builtin_frame_address(0)))[14]; /* get SP and use it to get the return address from stack */
     if (pc >= prof.lowpc && pc < prof.highpc) {
@@ -51,7 +52,7 @@ void gprof_systick_isr(void) {
 /* Stop profiling to the profiling buffer pointed to by p. */
 __attribute__((no_instrument_function))
 static int profile_off (struct profinfo *p) {
-  _VectorsRam[15] = systick_isr;
+  _VectorsRam[15] = save_isr;
   p->state = PROFILE_OFF;
   return 0;
 }
@@ -59,6 +60,7 @@ static int profile_off (struct profinfo *p) {
 /* Create a timer thread and pass it a pointer P to the profiling buffer. */
 __attribute__((no_instrument_function))
 static int profile_on (struct profinfo *p) {
+  save_isr = _VectorsRam[15];
   _VectorsRam[15] = gprof_systick_isr;
   p->state = PROFILE_ON;
   return 0; /* ok */
