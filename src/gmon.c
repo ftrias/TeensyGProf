@@ -74,7 +74,7 @@ void *_sbrk(int incr) {
 }
 #endif
 
-// #define STATIC_MEMORY_BUFFER 6324
+// #define STATIC_MEMORY_BUFFER 16324
 
 #ifdef STATIC_MEMORY_BUFFER
 #define mem_textsize STATIC_MEMORY_BUFFER
@@ -88,7 +88,7 @@ static void *fake_sbrk(int size) {
 
 #ifdef STATIC_MEMORY_BUFFER
   void *rv ;
-  if (size < mem_size) rv = &mem_buffer;
+  if (size <= mem_size) rv = &mem_buffer;
   else rv = NULL;
 #else
   void *rv = malloc(size);
