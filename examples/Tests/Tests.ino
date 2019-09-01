@@ -60,6 +60,7 @@ void runtests() {
 
 void setup() {
     Serial.begin(115200);
+    // TeensyProf_init_stream(&Serial);
 }
 
 long start = millis();
