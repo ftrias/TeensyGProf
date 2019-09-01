@@ -129,7 +129,7 @@ struct tostruct {
 	size_t	selfpc; /* callee address/program counter. The caller address is in froms[] array which points to tos[] array */
 	long	count;    /* how many times it has been called */
 	u_short	link;   /* link to next entry in hash table. For tos[0] this points to the last used entry */
-	// u_short pad;    /* additional padding bytes, to have entries 4byte aligned */
+	u_short pad;    /* additional padding bytes, to have entries 4byte aligned */
 };
 
 /*
