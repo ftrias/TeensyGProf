@@ -1,4 +1,4 @@
-TeensyProf
+TeensyGProf
 =====================
 
 Implementation of gprof profiler for Teensy 3/4 platform from PJRC.
@@ -72,6 +72,7 @@ Short Example
 ```C++
 void setup() {
   Serial.begin(115200);
+  TeensyProf_init_stream(&Serial1);
 }
 
 void loop() {
