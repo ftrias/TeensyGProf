@@ -74,12 +74,26 @@ void *_sbrk(int incr) {
 }
 #endif
 
-// extern long tickcounter;
+// #define STATIC_MEMORY_BUFFER 6324
+
+#ifdef STATIC_MEMORY_BUFFER
+#define mem_textsize STATIC_MEMORY_BUFFER
+#define mem_size mem_textsize / HISTFRACTION + mem_textsize / HASHFRACTION + (int)(mem_textsize * ARCDENSITY / 100) * 12
+uint8_t mem_buffer[mem_size];
+#endif
 
 __attribute__((no_instrument_function))
 static void *fake_sbrk(int size) {
   gprof_memory_requested = size;
+
+#ifdef STATIC_MEMORY_BUFFER
+  void *rv ;
+  if (size < mem_size) rv = &mem_buffer;
+  else rv = NULL;
+#else
   void *rv = malloc(size);
+#endif
+
   if (rv) {
     return rv;
   } else {
@@ -248,6 +262,7 @@ static void moncontrol(int mode) {
 	}
 }
 
+__attribute__((no_instrument_function))
 int gprof_start() {
   if (already_setup == 1) return 1;
   already_setup = 1;
@@ -262,7 +277,7 @@ int gprof_start() {
   return _gmonparam.state == GMON_PROF_ON;
 }
 
-
+__attribute__((no_instrument_function))
 int gprof_end() {
 	if (_gmonparam.state == GMON_PROF_ABORT) {
     return 1;
