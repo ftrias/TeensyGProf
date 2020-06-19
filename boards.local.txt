@@ -1,0 +1,7 @@
+menu.gprof=Profile
+teensy41.menu.gprof.off=Off
+teensy41.menu.gprof.on=On
+teensy41.menu.gprof.on.build.flags.profile=-g -pg
+teensy40.menu.gprof.off=Off
+teensy40.menu.gprof.on=On
+teensy40.menu.gprof.on.build.flags.profile=-g -pg

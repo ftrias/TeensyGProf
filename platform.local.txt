@@ -1,0 +1,4 @@
+build.flags.profile=
+build.flags.profelf=/tmp/build.elf
+recipe.cpp.o.pattern="{compiler.path}{build.toolchain}{build.command.g++}" -c {build.flags.optimize} {build.flags.profile} {build.flags.common} {build.flags.dep} {build.flags.cpp} {build.flags.cpu} {build.flags.defs} -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DF_CPU={build.fcpu} -D{build.usbtype} -DLAYOUT_{build.keylayout} "-I{build.path}/pch" {includes} "{source_file}" -o "{object_file}"
+recipe.hooks.postbuild.4.pattern="{compiler.path}{build.toolchain}{build.command.objcopy}" --rename-section .text.itcm=.text "{build.path}/{build.project_name}.elf" "{build.flags.profelf}"

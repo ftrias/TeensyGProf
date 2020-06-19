@@ -5,16 +5,16 @@
  *      Author: Erich Styger
  */
 
-    .syntax unified
-    .arch armv7-m
-
+.syntax unified
+.arch armv7-m
+.thumb
 .globl __gnu_mcount_nc
 .type __gnu_mcount_nc, %function
 
 __gnu_mcount_nc:
 #if 0 /* dummy version, doing nothing */
   mov    ip, lr
-  pop    { lr }
+  pop    {lr}
   bx     ip
 #else
   push {r0, r1, r2, r3, lr}     /* save registers */

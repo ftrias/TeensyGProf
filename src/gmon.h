@@ -116,7 +116,7 @@ struct gmonhdr {
  * profiling data structures without (in practice) sacrificing
  * any granularity.
  */
-#define	HASHFRACTION	4
+#define	HASHFRACTION	2
 
 /*
  * percent of text space to allocate for tostructs with a minimum.

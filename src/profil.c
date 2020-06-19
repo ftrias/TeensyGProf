@@ -31,22 +31,36 @@ void (* save_isr)(void) = systick_isr;
 
 // long tickcounter = 0;
 
+uint32_t stackpc;
+
 /* sample the current program counter */
 //void SysTick_Handler(void) {
   //void OSA_SysTick_Handler(void);
+
 __attribute__((no_instrument_function))
-void gprof_systick_isr(void) {
+void gprof_isr(void) {
   static size_t pc, idx;
 
-  save_isr(); /* call saved SysTick handler */
   if (prof.state==PROFILE_ON) {
-    pc = ((uint32_t*)(__builtin_frame_address(0)))[14]; /* get SP and use it to get the return address from stack */
+    // pc = ((uint32_t*)(__builtin_frame_address(0)))[14]; /* get SP and use it to get the return address from stack */
+    pc = stackpc;
     if (pc >= prof.lowpc && pc < prof.highpc) {
       idx = PROFIDX (pc, prof.lowpc, prof.scale);
       prof.counter[idx]++;
     }
     // tickcounter++;
   }
+}
+
+__attribute__((no_instrument_function, naked))
+void gprof_systick_isr(void) {
+  asm volatile("ldr r0, [sp, #24]"); // get PC from interrupt stack
+  asm volatile("ldr r1, =stackpc");  // we're going to store it in stackpc
+  asm volatile("str r0, [r1]");      // store it
+  asm volatile("push {lr}");
+  gprof_isr();
+  save_isr();                        // call saved handler
+  asm volatile("pop {pc}");
 }
 
 /* Stop profiling to the profiling buffer pointed to by p. */
