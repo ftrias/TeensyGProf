@@ -21,6 +21,7 @@ class GProfOutput {
 private:
     int fp;
 public:
+    virtual ~GProfOutput() {}
     virtual int open(const char *fn, int flags, int perm) = 0;
     virtual int write(const void *data, int length) = 0;
     virtual int close() = 0;
@@ -30,6 +31,7 @@ class GProfOutputSD : public GProfOutput {
 private:
     int fp;
 public:
+    virtual ~GProfOutputSD() {}
     virtual int open(const char *fn, int flags, int perm);
     virtual int write(const void *data, int length);
     virtual int close();
@@ -40,6 +42,7 @@ class GProfOutputHex : public GProfOutput {
 private:
     int fp;
 public:
+    virtual ~GProfOutputHex() {}
     virtual int open(const char *fn, int flags, int perm);
     virtual int write(const void *data, int length);
     virtual int close();
@@ -50,6 +53,7 @@ class GProfOutputFile : public GProfOutput {
 private:
     int fp;
 public:
+    virtual ~GProfOutputFile() {}
     virtual int open(const char *fn, int flags, int perm);
     virtual int write(const void *data, int length);
     virtual int close();

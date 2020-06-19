@@ -38,7 +38,7 @@ uint32_t stackpc;
   //void OSA_SysTick_Handler(void);
 
 __attribute__((no_instrument_function))
-void gprof_systick_isr_step2(void) {
+void gprof_isr(void) {
   static size_t pc, idx;
 
   if (prof.state==PROFILE_ON) {
@@ -50,7 +50,6 @@ void gprof_systick_isr_step2(void) {
     }
     // tickcounter++;
   }
-  save_isr(); /* call saved SysTick handler */
 }
 
 __attribute__((no_instrument_function, naked))
@@ -59,7 +58,8 @@ void gprof_systick_isr(void) {
   asm volatile("ldr r1, =stackpc");  // we're going to store it in stackpc
   asm volatile("str r0, [r1]");      // store it
   asm volatile("push {lr}");
-  gprof_systick_isr_step2();
+  gprof_isr();
+  save_isr();                        // call saved handler
   asm volatile("pop {pc}");
 }
 

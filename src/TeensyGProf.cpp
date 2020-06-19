@@ -13,10 +13,10 @@ int GProf::begin(GProfOutput *output, unsigned long milliseconds) {
     if (gout) delete gout;
     gout = output;
     if (milliseconds) {
-        complete.attach(gprof_end);
+        complete.attach((EventResponderFunction)gprof_end);
         timer.begin(milliseconds, complete);
     }
-    gprof_start();
+    return gprof_start();
 }
 
 int GProf::begin(Stream *output, unsigned long milliseconds) {
@@ -35,6 +35,7 @@ int GProf::end(GProfOutput *output) {
         Serial.println("Error in gprof_end().");
     }
     // while(1) { asm volatile("wfi"); }
+    return 0;
 }
 
 

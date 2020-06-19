@@ -77,12 +77,13 @@ python readfile.py --serial /dev/cu.usb.usbmodem123456
 
 The script will go into an infinite loop processing all the runs that it detects. So you can restart Teensy without having to restart `readfile.py`.
 
+
 Patches
 ---------------
 
 The files below must be added (or modified if already existing). They are located in the Teensyduino install directory, which is a part of Arduino. On the Mac, they are in `/Applications/Arduino.app/Contents/Java/hardware/teensy/avr`.
 
-1. In the same directory as `boards.txt`, create `boards.local.txt` with these contents. If the file exists, add to the end.
+1. In the same directory as `boards.txt`, create `boards.local.txt` with the following contents. If the file exists, add to the end. This will add the menu options.
 
 ```
 menu.gprof=Profile
@@ -97,7 +98,7 @@ teensy32.menu.gprof.on=On
 teensy32.menu.gprof.on.build.flags.profile=-g -pg
 ```
 
-2. In the same directory as above, create `platform.local.txt` (or append):
+2. In the same directory as above, create `platform.local.txt` (or append) with the following content. This will modify the compile stage of cpp files to add the profiling option. It will also add an additional build step that copies the elf file to standard directory so that `readfile.py` can find it.
 
 ```
 build.flags.profile=
@@ -115,7 +116,9 @@ Implementation details
 
 3. You can configure the amount of RAM memory used by the sampler in Step 1 and the call tracker in Step 2. Look at file `gmon.h` and modify `HASHFRACTION` and `ARCDENSITY`.
 
-4. When the timer runs out, it executes `gmon_end()`. That processes all the data and outputs the contents of `gmon.out` to the desired port in the format requested. This file, along with a copy of the `elf` file is used by gprof to generate a report. You can customize the output method by subclassing class `GProfOutput`. For example, you could send this file via a network or HTTP.
+4. If you call `grpof.begin()` and pass milliseconds it will start a timer that upon terminateion executes `gprof.end()()`. Otherwise you must call `gprof.end()`. That processes all the data and outputs the contents of `gmon.out` to the desired port in the format requested. This file, along with a copy of the `elf` file is used by gprof to generate a report. You can customize the output method by subclassing class `GProfOutput`. For example, you could send this file via a network or HTTP.
+
+5. For some reason, Teensy 4 puts it's code in a section called `.text.itcm`. Gprof expects it in a section called `.text`, which is the standard in Linux. Teensy 3 puts it in the right place. So before calling gprof, the `readfile.py` script will run `objcopy` to rename the section.
 
 
 Todo
