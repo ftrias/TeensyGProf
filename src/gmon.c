@@ -164,7 +164,7 @@ void monstartup (const size_t lowpc, const size_t highpc) {
 	moncontrol(1); /* start */
 }
 
-#include "TeensyFile.h"
+#include "TeensyGProf.h"
 
 __attribute__((no_instrument_function))
 void _mcleanup(void) {
@@ -299,6 +299,10 @@ void _mcount_internal(size_t *frompcindex, size_t *selfpc) {
   register long			toindex;
   struct gmonparam *p = &_gmonparam;
 
+  #ifdef GMON_DISABLE
+  return;
+  #endif
+
   // tickcounter++;
 
   if (already_setup == 0) {
@@ -306,10 +310,6 @@ void _mcount_internal(size_t *frompcindex, size_t *selfpc) {
       already_setup = -1;
     }
   }
-
-  #ifdef GMON_DISABLE
-  goto out;
-  #endif
 
   /*
    *	check that we are profiling
@@ -417,10 +417,10 @@ void _mcount_internal(size_t *frompcindex, size_t *selfpc) {
 }
 
 #ifdef USE_INLINE
-void __gnu_mcount_nc() __attribute__((naked)) __attribute__((no_instrument_function))
+__attribute__((naked)) __attribute__((no_instrument_function))
 void __gnu_mcount_nc() {
   __asm__(
-#if 0 /* dummy version, doing nothing */
+#if 1 /* dummy version, doing nothing */
   "mov    ip, lr" "\n"
   "pop    { lr }" "\n"
   "bx     ip" "\n"
@@ -431,7 +431,9 @@ void __gnu_mcount_nc() {
   "bic r0, r0, #1                /* clear thumb bit */" "\n"
   "bl _mcount_internal           /* jump to internal _mcount() implementation */" "\n"
   "pop {r0, r1, r2, r3, ip, lr}  /* restore saved registers */" "\n"
-  "bx ip                         /* return to caller */" "\n"
+  "mov ip, lr" "\n"
+  "pop {lr}" "\n"
+  "bx  ip" "\n"
 #endif
   );
 }

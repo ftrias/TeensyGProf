@@ -1,41 +1,74 @@
-/************
- * 
- * Copyright 2019 by Fernando Trias. All rights reserved.
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
- * and associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
- * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- ************/
-
 #include <Arduino.h>
 #include "TeensyGProf.h"
+#include "EventResponder.h"
 
-#if TEENSYPROF_OUT==1 //"SDCARD"
+MillisTimer timer;
+EventResponder complete;
+
+GProfOutput *gout = NULL;
+
+GProf gprof;
+
+int GProf::begin(GProfOutput *output, unsigned long milliseconds) {
+    if (gout) delete gout;
+    gout = output;
+    if (milliseconds) {
+        complete.attach(gprof_end);
+        timer.begin(milliseconds, complete);
+    }
+    gprof_start();
+}
+
+int GProf::begin(Stream *output, unsigned long milliseconds) {
+    // this causes a memory leak!!
+    GProfOutputFile *out = new GProfOutputFile();
+    out->begin(output);
+    return begin(out, milliseconds);
+}
+
+int GProf::end(GProfOutput *output) {
+    if (output) {
+        if (gout) delete gout;
+        gout = output;
+    }
+    if (gprof_end()) {
+        Serial.println("Error in gprof_end().");
+    }
+    // while(1) { asm volatile("wfi"); }
+}
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int TeensyProf_open(const char *fn, int flags, int perm) {
+    if (gout == NULL) {
+        GProfOutputHex *out = new GProfOutputHex();
+        out->begin(&Serial);
+        gout = out;
+    }
+    return gout->open(fn, flags, perm);
+}
+int TeensyProf_write(int fp, const void *data, int length) {
+    return gout->write(data, length);
+}
+int TeensyProf_close(int fp) {
+    return gout->close();
+}
+
+#ifdef __cplusplus
+}
+
 
 #include <SD.h>
 #include <SPI.h>
-
-// #define TeensyProf_open open
-// #define TeensyProf_write write
-// #define TeensyProf_close close
 
 int GPROF_MOSI = 7;
 int GPROF_SCK = 14;
 int GPROF_CD = 10;
 
-extern "C" void TeensyProf_init_sd(int mosi, int sck, int cd) {
+void GProfOutputSD::begin(int mosi, int sck, int cd) {
   GPROF_MOSI = mosi;
   GPROF_SCK = sck;
   GPROF_CD = cd;
@@ -57,7 +90,7 @@ int file_lib_init() {
   }
   return 1;
 }
-extern "C" int TeensyProf_open(const char *fn, int flags, int perm) {
+int GProfOutputSD::open(const char *fn, int flags, int perm) {
   file_lib_init();
   SD.remove(fn);
   myFile = SD.open(fn, FILE_WRITE);
@@ -65,12 +98,12 @@ extern "C" int TeensyProf_open(const char *fn, int flags, int perm) {
   file_lib_error = 0;
   return 1;
 }
-extern "C" int TeensyProf_write(int fp, const void *data, int len) {
+int GProfOutputSD::write(const void *data, int len) {
   if (file_lib_error) return -1;
   if (!myFile) return -1;
   return myFile.write((char*)data, len);
 }
-extern "C" int TeensyProf_close(int fp) {
+int GProfOutputSD::close() {
   if (file_lib_error) return -1;
   if (!myFile) return -1;
   myFile.close();
@@ -78,15 +111,13 @@ extern "C" int TeensyProf_close(int fp) {
   return 1;
 }
 
-#elif TEENSYPROF_OUT==2 //"SERIALFILE"
-
 Stream *mystream = &Serial;
 
-extern "C" void TeensyProf_init_stream(void *s) {
-  mystream = (Stream *) s;
+void GProfOutputFile::begin(Stream *s) {
+  mystream = s;
 }
 
-extern "C" int TeensyProf_open(const char *fn, int flags, int perm) {
+int GProfOutputFile::open(const char *fn, int flags, int perm) {
   char x[256];
   x[0] = 0;
   strcat(x, "wb");
@@ -99,7 +130,7 @@ extern "C" int TeensyProf_open(const char *fn, int flags, int perm) {
   return 1;
 }
 
-extern "C" int TeensyProf_write(int fp, const void *data, int length) {
+int GProfOutputFile::write(const void *data, int length) {
   int len;
   const uint8_t *d = (const uint8_t *)data;
   while (1) {
@@ -116,7 +147,7 @@ extern "C" int TeensyProf_write(int fp, const void *data, int length) {
   return length;
 }
 
-extern "C" int TeensyProf_close(int fp) {
+int GProfOutputFile::close() {
   mystream->write((uint8_t)0x01);
   mystream->write((uint8_t)0x02);
   mystream->write((uint8_t)0x01);
@@ -124,9 +155,9 @@ extern "C" int TeensyProf_close(int fp) {
   return 1;
 }
 
-#elif TEENSYPROF_OUT==3 //"MIDIFILE"
+#ifdef MIDI_INTERFACE
 
-extern "C" int TeensyProf_open(const char *fn, int flags, int perm) {
+int GProfOutputMIDI::open(const char *fn, int flags, int perm) {
   uint8_t x[256];
   x[0] = 0x01;
   strcpy((char*)x+1, fn);
@@ -135,7 +166,7 @@ extern "C" int TeensyProf_open(const char *fn, int flags, int perm) {
   return 1;
 }
 
-extern "C" int TeensyProf_write(int fp, const void *data, int length) {
+int GProfOutputMIDI::write(const void *data, int length) {
   uint8_t x[64];
   x[0] = 0xF0;
   x[1] = 0x03;
@@ -160,28 +191,26 @@ extern "C" int TeensyProf_write(int fp, const void *data, int length) {
   return length;
 }
 
-extern "C" int TeensyProf_close(int fp) {
+int GProfOutputMIDI::close() {
   uint8_t x[] = {0xF0, 0x02, 0x00, 0x00, 0x00, 0xF7};
   usbMIDI.sendSysEx(sizeof(x), x, true);
   usbMIDI.send_now();
   return 1;
 }
 
-#elif TEENSYPROF_OUT==4 //"HEXFILE"
+#endif
 
-Stream *mystream = &Serial;
-
-extern "C" void TeensyProf_init_stream(void *s) {
-  mystream = (Stream *) s;
+void GProfOutputHex::begin(Stream *s) {
+  mystream = s;
 }
 
-extern "C" int TeensyProf_open(const char *fn, int flags, int perm) {
+int GProfOutputHex::open(const char *fn, int flags, int perm) {
   mystream->print("START:");
   mystream->println(fn);
   return 1;
 }
 
-extern "C" int TeensyProf_write(int fp, const void *data, int length) {
+int GProfOutputHex::write(const void *data, int length) {
   static const char *hex = "0123456789ABCDEF";
   static int column = 0;
   for (int i=0; i<length; i++) {
@@ -196,7 +225,7 @@ extern "C" int TeensyProf_write(int fp, const void *data, int length) {
   return length;
 }
 
-extern "C" int TeensyProf_close(int fp) {
+int GProfOutputHex::close() {
   mystream->println();
   mystream->println("END");
   return 1;
