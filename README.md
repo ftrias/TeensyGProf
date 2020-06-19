@@ -14,9 +14,10 @@ Requires
 
 1. Build gprof cross-compiled for ARM or use the binaries in "binaries" directory.  Instructions for building are beyond the scope of this text. Look up how to install your own cross-compiler, including arm-none-eabi-gprof. Normally this is part of a build, but Teensyduino does not include it.
 
-2. Python 2.7 or higher.
+2. Python 2.7 or higher for automatic processing.
 
 3. Modify Teensyduino files as shown in *Patches* section at bottom of this document.
+
 
 Overview
 -------------
@@ -27,24 +28,31 @@ GProf is a sampling profiler that does two things:
 
 2. Keep track of which function calls which. It will use this to create an estimate of the cumulative time spent in a function and all functions it calls.
 
-After running for a while (you determine this time), a file "gmon.out" is written  out to a serial port with the function counters and data. A python program listens for this file on the serial port and then this file is cross-referenced by gprof with  the original executable to  generate a table of execution times.
+After running for a while (you determine the amount of time), a file "gmon.out" is written  out to a serial port with the function counters and data. A python program listens for this file on the serial port and then gprof will cross-reference this file the original executable by gprof to generate a table of execution times.
 
 
 Installation Instructions
 --------------
 
 1. Install ZIP file as Arudino library.
-2. Modify files as described in *Patches* section
-3. Build or copy arm-none-eabi-gprof and modify `readfile.py` to point to it
+
+2. Modify files as described in *Patches* section.
+
+3. Build or copy arm-none-eabi-gprof and modify `readfile.py` to point to it.
+
 
 Running Instructions
 --------------
 
-4. Start Arduino and open TeensyGProf example
-5. Select menu Tools / Profile / On
-6. Select a USB Type that includes Serial (preferably Dual Serial USB)
-7. Compile and upload
-8. Run `python readfile.py --serial /dev/cu.usb.usbmodem123456` [substitute actual usb serial device]
+1. Start Arduino and open TeensyGProf example.
+
+2. Select menu Tools / Profile / On.
+
+3. Select a USB Type that includes Serial (preferably Dual Serial USB).
+
+4. Compile and upload.
+
+5. Run `python readfile.py --serial /dev/cu.usb.usbmodem123456` [substitute actual usb serial device].
 
 `readfile.py` will open the serial port, print out anything it receives, filtering and processing the special `gmon.out` data. It will write out the `gmon.out` file and then run `gprof` to show the outout.
 
@@ -54,7 +62,7 @@ The library also supports writing the `gmon.out` file from midi, in hex or to an
 Short Example
 ----------------
 
-Compile with `Dual Serial USB` support. 
+Compile the following with `Dual Serial USB` support and `Profile / On`.
 
 ```C++
 #include "TeensyGProf.h"
@@ -83,7 +91,7 @@ You can view the sketch output with the Serial Monitor and collect the profile d
 python readfile.py --serial /dev/cu.usb.usbmodem123456
 ```
 
-The script will go into an infinite loop processing all the runs that it detects. So you can restart Teensy without having to restart `readfile.py`.
+The script will go into a loop processing all the runs that it detects until you terminate it by pressing Ctrl-C. In this way, you can recompile and restart Teensy without having to restart `readfile.py`.
 
 
 Patches
@@ -101,13 +109,13 @@ Implementation details
 
 1. TeensyGProf will commandeer the `systick_isr` handler. It will process it's own profiling before handing control to the original `systick_isr` handler. Thus EventResponder and all other timing code should be unaffected. The sampling data will be stored in RAM.
 
-2. It adds the `-pg` compiler flag. This causes the compiler to add a call to `_gnu_mcount_nc` at the start of every function. That's how it keeps track of the call stack. Call stacks (called Arcs) are also stored in RAM.
+2. It adds the `-pg` compiler flag to cpp files. This causes the compiler to add a call to `_gnu_mcount_nc` at the start of every function. That's how it keeps track of the call stack. Call stacks (called Arcs) are also stored in RAM.
 
-3. You can configure the amount of RAM memory used by the sampler in Step 1 and the call tracker in Step 2. Look at file `gmon.h` and modify `HASHFRACTION` and `ARCDENSITY`.
+3. You can configure the amount of RAM memory used by the sampler in Step 1 and the call tracker in Step 2. The more memory you allocate, the more accurate your results. Look at file `gmon.h` and modify `HASHFRACTION` and `ARCDENSITY`.
 
-4. If you call `grpof.begin()` and pass milliseconds it will start a timer that upon terminateion executes `gprof.end()()`. Otherwise you must call `gprof.end()`. That processes all the data and outputs the contents of `gmon.out` to the desired port in the format requested. This file, along with a copy of the `elf` file is used by gprof to generate a report. You can customize the output method by subclassing class `GProfOutput`. For example, you could send this file via a network or HTTP.
+4. If you call `grpof.begin()` and pass milliseconds it will start a timer that upon termination executes `gprof.end()`, which outputs the data. Otherwise you must call `gprof.end()`. That processes all the data and outputs the contents of `gmon.out` to the desired port in the format requested. This file, along with a copy of the `elf` file is used by gprof to generate a report. You can customize the output method by subclassing class `GProfOutput`. For example, you could send this file via a network or HTTP.
 
-5. For some reason, Teensy 4 puts it's code in a section called `.text.itcm`. Gprof expects it in a section called `.text`, which is the standard in Linux. Teensy 3 puts it in the right place. So before calling gprof, the `readfile.py` script will run `objcopy` to rename the section.
+5. For some reason, Teensy 4 puts it's code in a section called `.text.itcm`. Gprof expects it in a section called `.text`, which is the standard in Linux. Teensy 3 puts it in the right place. So the `platform.local.txt` files tells arduino to run `objcopy` to rename the section.
 
 
 Todo
