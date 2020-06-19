@@ -4,7 +4,7 @@ by Fernando Trias
 
 Implementation of gprof profiler for Teensy 3 and 4 platform from PJRC.
 
-This document is written for Linux/Mac. It's possible to follow a similar procedure for Windows.
+This document is written for Linux/Mac. It is possible to follow a similar procedure for Windows.
 
 See license.txt for licenses used by code.
 
@@ -12,16 +12,11 @@ See license.txt for licenses used by code.
 Requires 
 --------------
 
-1. Install the ZIP file as an Arduino library (Sketch / Include Library / Add ZIP Library).
+1. Build gprof cross-compiled for ARM or use the binaries in "binaries" directory.  Instructions for building are beyond the scope of this text. Look up how to install your own cross-compiler, including arm-none-eabi-gprof. Normally this is part of a build, but Teensyduino does not include it.
 
-2. Modify Teensyduino files as shown in *Patches* section at bottom of this document.
+2. Python 2.7 or higher.
 
-3. Build gprof for ARM or use provided binaries in "binaries" directory.  Instructions for building are beyond the scope of this text. Look up how to install your own cross-compiler, including arm-none-eabi-gprof. Normally this is part of a build, but Teensyduino does not include it.
-
-4. Modify `readfile.py` so the variable `gprof` has correct path to executable from step 2, and `objcopy` to point to the file `arm-none-eabi-objcopy` in your Teensyduino install.
-
-5. Python installed.
-
+3. Modify Teensyduino files as shown in *Patches* section at bottom of this document.
 
 Overview
 -------------
@@ -38,13 +33,18 @@ After running for a while (you determine this time), a file "gmon.out" is writte
 Installation Instructions
 --------------
 
-1. Modify files as described in *Patches* section
-2. Build or copy arm-none-eabi-gprof & modify `readfile.py` to point to it
-3. Open up Arduino and TeensyGProf example
-4. Select menu Tools / Profile / On
-5. Select a USB Type that includes Serial (preferably Dual Serial USB)
-6. Compile and upload
-7. Run `python readfile.py --serial /dev/cu.usb.usbmodem123456` [substitute actual usb serial device]
+1. Install ZIP file as Arudino library.
+2. Modify files as described in *Patches* section
+3. Build or copy arm-none-eabi-gprof and modify `readfile.py` to point to it
+
+Running Instructions
+--------------
+
+4. Start Arduino and open TeensyGProf example
+5. Select menu Tools / Profile / On
+6. Select a USB Type that includes Serial (preferably Dual Serial USB)
+7. Compile and upload
+8. Run `python readfile.py --serial /dev/cu.usb.usbmodem123456` [substitute actual usb serial device]
 
 `readfile.py` will open the serial port, print out anything it receives, filtering and processing the special `gmon.out` data. It will write out the `gmon.out` file and then run `gprof` to show the outout.
 
@@ -58,6 +58,14 @@ Compile with `Dual Serial USB` support.
 
 ```C++
 #include "TeensyGProf.h"
+
+volatile int sum = 0;
+
+void do_something() {
+  for(int i=0; i<1000; i++) {
+    sum += 1;
+  }
+}
 
 void setup() {
   // collect for 5000 milliseconds and send on second USB Serial
@@ -83,28 +91,9 @@ Patches
 
 The files below must be added (or modified if already existing). They are located in the Teensyduino install directory, which is a part of Arduino. On the Mac, they are in `/Applications/Arduino.app/Contents/Java/hardware/teensy/avr`.
 
-1. In the same directory as `boards.txt`, create `boards.local.txt` with the following contents. If the file exists, add to the end. This will add the menu options.
+1. In the same directory as `boards.txt`, place a copy of `boards.local.txt`. If the file exists, add to the end. This will add the menu options.
 
-```
-menu.gprof=Profile
-teensy41.menu.gprof.off=Off
-teensy41.menu.gprof.on=On
-teensy41.menu.gprof.on.build.flags.profile=-g -pg
-teensy40.menu.gprof.off=Off
-teensy40.menu.gprof.on=On
-teensy40.menu.gprof.on.build.flags.profile=-g -pg
-teensy32.menu.gprof.off=Off
-teensy32.menu.gprof.on=On
-teensy32.menu.gprof.on.build.flags.profile=-g -pg
-```
-
-2. In the same directory as above, create `platform.local.txt` (or append) with the following content. This will modify the compile stage of cpp files to add the profiling option. It will also add an additional build step that copies the elf file to standard directory so that `readfile.py` can find it.
-
-```
-build.flags.profile=
-recipe.cpp.o.pattern="{compiler.path}{build.toolchain}{build.command.g++}" -c {build.flags.optimize} {build.flags.profile} {build.flags.common} {build.flags.dep} {build.flags.cpp} {build.flags.cpu} {build.flags.defs} -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DF_CPU={build.fcpu} -D{build.usbtype} -DLAYOUT_{build.keylayout} "-I{build.path}/pch" {includes} "{source_file}" -o "{object_file}"
-recipe.hooks.postbuild.4.pattern="cp" "{build.path}/{build.project_name}.elf" "/tmp/build.elf"
-```
+2. In the same directory as above, copy `platform.local.txt` (or append to it). This will modify the compile stage of cpp files to add the profiling option. It will also add an additional build step that copies the elf file (renaming a section--see below) to standard location so that `readfile.py` can find it. The value for `profelf` must match the value in `readfile.py`.
 
 
 Implementation details
